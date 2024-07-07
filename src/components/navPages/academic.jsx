@@ -122,23 +122,24 @@ function Academic() {
                 value={newNoteTitle}
                 onChange={(e) => setNewNoteTitle(e.target.value)}
                 placeholder="Title of Project"
-                className="border border-gray-300 p-2 rounded mr-2"
+                className="border border-gray-300 p-2 rounded mr-2 w-1/12"
               />
               <textarea
                 value={newNoteDescription}
                 onChange={(e) => setNewNoteDescription(e.target.value)}
                 placeholder="Description of Project"
-                className="border border-gray-300 p-2 rounded"
-                rows={6}
+                className="border border-gray-300 p-2 rounded w-1/2 overflow-x"
+                rows={20}
+                style={{ whiteSpace: 'nowrap', overflowX: 'scroll' }}
               />
               <input
                 type="date"
                 value={newNoteDueDate}
                 onChange={(e) => setNewNoteDueDate(e.target.value)}
                 placeholder="Due Date"
-                className="border border-gray-300 p-2 rounded mr-2"
+                className="border border-gray-300 p-2 rounded mr-2 w-1/12"
               />
-              <button onClick={createNewNote} className="bg-blue-500 text-white py-2 rounded">
+              <button onClick={createNewNote} className="bg-blue-500 text-white py-2 rounded w-1/12">
                 Create Project
               </button>
             </div>
@@ -147,7 +148,7 @@ function Academic() {
 
         {/* In Progress Projects Section */}
         <div className="mt-10 flex">
-          <div className="flex-1 flex flex-col">
+          <div className="flex-grow flex flex-col">
             <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Projects</h3>
             {inProgressNotes.length === 0 ? (
               <p className="ml-8 mb-5">No projects in progress</p>
@@ -164,21 +165,22 @@ function Academic() {
                               value={note.title}
                               placeholder="Title of Project"
                               onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, title: e.target.value } : n)))}
-                              className="border border-gray-300 p-2 rounded"
+                              className="border border-gray-300 p-2 rounded w-1/3"
                             />
                             <textarea
                               value={note.description}
                               placeholder="Description of Project"
                               onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, description: e.target.value } : n)))}
                               className="border border-gray-300 p-2 rounded"
-                              rows={6}
+                              rows={20}
+                              style={{ whiteSpace: 'nowrap', overflowX: 'scroll' }}
                             />
                             <input
                               type="date"
                               value={note.dueDate ? note.dueDate.toDate().toISOString().split('T')[0] : ''}
                               placeholder="Due Date"
                               onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, dueDate: Timestamp.fromDate(new Date(e.target.value)) } : n)))}
-                              className="border border-gray-300 p-2 rounded"
+                              className="border border-gray-300 p-2 rounded w-1/3"
                             />
                             <div className="flex items-center space-x-4">
                               <button onClick={() => setEditingNoteId(null)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">
@@ -195,7 +197,6 @@ function Academic() {
                         ) : (
                           <div>
                             <h4 className="text-xl font-semibold">{note.title}</h4>
-                            <p className="text-gray-500">{note.description}</p>
                             {note.dueDate && (
                               <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
                             )}
@@ -236,7 +237,6 @@ function Academic() {
                 <li key={note.id} className="flex items-center border border-gray-300 p-2 rounded mb-3 mr-6">
                   <div className="flex-1">
                     <h4 className="text-xl font-semibold">{note.title}</h4>
-                    <p className="text-gray-500">{note.description}</p>
                     {note.dueDate && (
                       <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
                     )} 
@@ -264,7 +264,6 @@ function Academic() {
                   <li key={note.id} className="flex items-center border border-gray-300 p-2 rounded mb-3 mr-6">
                     <div className="flex-1">
                       <h4 className="text-xl font-semibold">{note.title}</h4>
-                      <p className="text-gray-500">{note.description}</p>
                       {note.dueDate && (
                         <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
                       )}
