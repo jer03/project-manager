@@ -8,7 +8,7 @@ const Layout = ({ children }) => {
   return (
     <div className="flex">
       {/* Sidebar */}
-      <div className="w-1/6 bg-gray-200 h-screen">
+      <div className="w-1/6 bg-gray-200 min-h-screen">
         <ul className="mt-20">
           <li>
           <Link to="/homepage" className="block py-2 px-4 hover:bg-gray-300 text-center">Home</Link>
