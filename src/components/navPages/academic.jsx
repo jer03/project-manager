@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './layout';
 import { doc, collection, addDoc, deleteDoc, updateDoc, getDocs, Timestamp } from 'firebase/firestore';
-import { firestore, auth } from '../../service/firebaseconfig'; // Check correct import path
+import { firestore, auth } from '../../service/firebaseconfig';
 import { RiDeleteBinLine, RiEdit } from 'react-icons/ri';
 import { MdEdit, MdCheckCircle } from 'react-icons/md';
 
@@ -10,8 +10,8 @@ function Academic() {
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteDescription, setNewNoteDescription] = useState('');
   const [newNoteDueDate, setNewNoteDueDate] = useState('');
-  const [showCreateForm, setShowCreateForm] = useState(false); // State to show/hide create form
-  const [editingNoteId, setEditingNoteId] = useState(null); // State to track the currently edited note
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
 
   // Fetch notes on component mount
   useEffect(() => {
@@ -45,14 +45,14 @@ function Academic() {
         title: newNoteTitle,
         description: newNoteDescription,
         dueDate: newNoteDueDate ? Timestamp.fromDate(new Date(newNoteDueDate)) : null,
-        status: 'inProgress' // Default status
+        status: 'inProgress'
       };
       const docRef = await addDoc(notesRef, newNote);
       setNotes([...notes, { id: docRef.id, ...newNote }]);
       setNewNoteTitle('');
       setNewNoteDescription('');
       setNewNoteDueDate('');
-      setShowCreateForm(false); // Hide the create form after creating a note
+      setShowCreateForm(false);
     } catch (error) {
       console.error('Error adding document: ', error);
     }
@@ -70,11 +70,9 @@ function Academic() {
     }
   };
 
-  // Function to edit a note (set edit mode)
+  // Function to edit a note
   const editNote = (noteId) => {
     setEditingNoteId(noteId);
-    // Fetch current note details if needed
-    // For simplicity, you can manage editing state in local state
   };
 
   // Function to save edited note
@@ -84,7 +82,7 @@ function Academic() {
       const noteRef = doc(firestore, 'users', userId, 'academicNotes', noteId);
       await updateDoc(noteRef, updatedData);
       setNotes(notes.map(note => (note.id === noteId ? { ...note, ...updatedData } : note)));
-      setEditingNoteId(null); // Clear editing state after saving
+      setEditingNoteId(null);
     } catch (error) {
       console.error('Error updating document: ', error);
     }
@@ -102,13 +100,16 @@ function Academic() {
     }
   };
 
-  // Filter notes based on status
-  const inProgressNotes = notes.filter(note => note.status !== 'completed');
+  // Function to filter notes
+  const inProgressNotes = notes.filter(note => note.status === 'inProgress');
   const completedNotes = notes.filter(note => note.status === 'completed');
+  const overdueNotes = notes.filter(note => {
+    return note.dueDate && note.dueDate.toDate() < new Date() && note.status !== 'completed';
+  });
 
   return (
     <Layout>
-      <div className="mt-20 ml-40 mr-40 border border-blue-300 rounded-lg flex flex-col w-1/16">
+      <div className="mt-20 ml-40 mr-40 border border-blue-300 rounded-lg flex flex-col">
         <h3 className="text-4xl font-bold mb-4 text-center mt-6">Academic Projects</h3>
         <div className="mb-2">
           <button onClick={() => setShowCreateForm(!showCreateForm)} className="bg-blue-500 text-white text-3xl rounded mt-6 ml-9 h-10 w-10 pb-2">
@@ -121,112 +122,111 @@ function Academic() {
                 value={newNoteTitle}
                 onChange={(e) => setNewNoteTitle(e.target.value)}
                 placeholder="Title of Project"
-                className="border border-gray-300 p-2 rounded mr-2 w-1/12"
+                className="border border-gray-300 p-2 rounded mr-2"
               />
               <textarea
                 value={newNoteDescription}
                 onChange={(e) => setNewNoteDescription(e.target.value)}
                 placeholder="Description of Project"
-                className="border border-gray-300 p-2 rounded w-1/3"
-                rows={10} // Adjust rows based on your UI preference
+                className="border border-gray-300 p-2 rounded"
+                rows={6}
               />
               <input
                 type="date"
                 value={newNoteDueDate}
                 onChange={(e) => setNewNoteDueDate(e.target.value)}
                 placeholder="Due Date"
-                className="border border-gray-300 p-2 rounded mr-2 w-1/12"
+                className="border border-gray-300 p-2 rounded mr-2"
               />
-              <button onClick={createNewNote} className="bg-blue-500 text-white py-2 rounded w-1/12">
+              <button onClick={createNewNote} className="bg-blue-500 text-white py-2 rounded">
                 Create Project
               </button>
             </div>
           )}
         </div>
-      <div className="mt-10 flex">
-        <div className="flex-1 flex flex-col border">
-          <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Projects</h3>
-          {inProgressNotes.length === 0 ? (
-            <p className="ml-8 mb-5">No projects in progress</p>
-          ) : (
-            <ul className="ml-8">
-              {inProgressNotes.map((note) => (
-                <li key={note.id} className="border border-gray-300 p-2 rounded mb-3 mr-6">
-                  <div className="flex justify-between items-center">
-                    <div className="w-full mr-12">
-                      {editingNoteId === note.id ? (
-                        // Render edit form instead of regular view
-                        <div className="mt-3 flex flex-col space-y-8">
-                          <input
-                            type="text"
-                            value={note.title}
-                            placeholder="Title of Project"
-                            onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, title: e.target.value } : n)))}
-                            className="border border-gray-300 p-2 rounded w-1/4"
-                         
-                          />
-                          <textarea
-                            value={note.description}
-                            placeholder="Description of Project"
-                            onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, description: e.target.value } : n)))}
-                            className="border border-gray-300 p-2 rounded h-48 w-full"
-                            row={6}
-                          />
-                          <input
-                            type="date"
-                            value={note.dueDate ? note.dueDate.toDate().toISOString().split('T')[0] : ''}
-                            placeholder="Due Date"
-                            onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, dueDate: Timestamp.fromDate(new Date(e.target.value)) } : n)))}
-                            className="border border-gray-300 p-2 rounded w-1/4"
-                          />
-                          <div className="flex items-center space-x-4">
-                            <button onClick={() => setEditingNoteId(null)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">
-                              Cancel
-                            </button>
-                            <button onClick={() => saveEditedNote(note.id, { title: note.title, description: note.description, dueDate: note.dueDate })} className="bg-blue-500 text-white px-4 py-2 rounded mr-2">
-                              Save
-                            </button>
-                            <button onClick={() => deleteNote(note.id)} className="bg-red-500 text-white px-3 py-1 rounded">
-                              <RiDeleteBinLine className="my-2" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        // Render regular note view
-                        <div>
-                          <h4 className="text-xl font-semibold">{note.title}</h4>
-                          <p className="text-gray-500">{note.description}</p>
-                          {note.dueDate && (
-                            <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex">
-                      {note.status === 'inProgress' && (
-                        <button
-                          onClick={() => markNoteAsCompleted(note.id)}
-                          className="bg-green-500 text-white px-3 py-1 rounded mr-4"
-                        >
-                          <MdCheckCircle className="my-2" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => editNote(note.id)}
-                        className="bg-yellow-500 text-white px-3 py-1 rounded mr-2"
-                      >
-                        <MdEdit className="my-2" />
-                      </button>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
 
-        {/* Completed Projects Section */}
-        <div className="flex-1 flex-col border">
+        {/* In Progress Projects Section */}
+        <div className="mt-10 flex">
+          <div className="flex-1 flex flex-col">
+            <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Projects</h3>
+            {inProgressNotes.length === 0 ? (
+              <p className="ml-8 mb-5">No projects in progress</p>
+            ) : (
+              <ul className="ml-8">
+                {inProgressNotes.map((note) => (
+                  <li key={note.id} className="border border-gray-300 p-2 rounded mb-3">
+                    <div className="flex justify-between items-center">
+                      <div className="w-full mr-12">
+                        {editingNoteId === note.id ? (
+                          <div className="mt-3 flex flex-col space-y-8">
+                            <input
+                              type="text"
+                              value={note.title}
+                              placeholder="Title of Project"
+                              onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, title: e.target.value } : n)))}
+                              className="border border-gray-300 p-2 rounded"
+                            />
+                            <textarea
+                              value={note.description}
+                              placeholder="Description of Project"
+                              onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, description: e.target.value } : n)))}
+                              className="border border-gray-300 p-2 rounded"
+                              rows={6}
+                            />
+                            <input
+                              type="date"
+                              value={note.dueDate ? note.dueDate.toDate().toISOString().split('T')[0] : ''}
+                              placeholder="Due Date"
+                              onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, dueDate: Timestamp.fromDate(new Date(e.target.value)) } : n)))}
+                              className="border border-gray-300 p-2 rounded"
+                            />
+                            <div className="flex items-center space-x-4">
+                              <button onClick={() => setEditingNoteId(null)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">
+                                Cancel
+                              </button>
+                              <button onClick={() => saveEditedNote(note.id, { title: note.title, description: note.description, dueDate: note.dueDate })} className="bg-blue-500 text-white px-4 py-2 rounded mr-2">
+                                Save
+                              </button>
+                              <button onClick={() => deleteNote(note.id)} className="bg-red-500 text-white px-3 py-1 rounded">
+                                <RiDeleteBinLine className="my-2" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <h4 className="text-xl font-semibold">{note.title}</h4>
+                            <p className="text-gray-500">{note.description}</p>
+                            {note.dueDate && (
+                              <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex">
+                        {note.status === 'inProgress' && (
+                          <button
+                            onClick={() => markNoteAsCompleted(note.id)}
+                            className="bg-green-500 text-white px-3 py-1 rounded mr-4"
+                          >
+                            <MdCheckCircle className="my-2" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => editNote(note.id)}
+                          className="bg-yellow-500 text-white px-3 py-1 rounded mr-2"
+                        >
+                          <MdEdit className="my-2" />
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Completed Projects Section */}
+        <div className="flex-1 flex-col">
           <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Completed</h3>
           {completedNotes.length === 0 ? (
             <p className="ml-8 mb-5">No completed projects</p>
@@ -252,11 +252,38 @@ function Academic() {
             </ul>
           )}
         </div>
-      </div>
+
+          {/* Overdue Projects Section */}
+          <div className="flex-1 flex flex-col">
+            <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Overdue</h3>
+            {overdueNotes.length === 0 ? (
+              <p className="ml-8 mb-5">No overdue projects</p>
+            ) : (
+              <ul className="ml-8">
+                {overdueNotes.map((note) => (
+                  <li key={note.id} className="flex items-center border border-gray-300 p-2 rounded mb-3 mr-6">
+                    <div className="flex-1">
+                      <h4 className="text-xl font-semibold">{note.title}</h4>
+                      <p className="text-gray-500">{note.description}</p>
+                      {note.dueDate && (
+                        <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
+                      )}
+                    </div>
+                    <button
+                    onClick={() => deleteNote(note.id)}
+                    className="bg-red-500 text-white px-3 py-3 rounded opacity-0 transition duration-300 hover:opacity-100 mr-3"
+                  >
+                    <RiDeleteBinLine />
+                  </button>  
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
     </Layout>
   );
 }
 
 export default Academic;
-
