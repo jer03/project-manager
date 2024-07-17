@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Layout from './layout';
 import { doc, collection, addDoc, deleteDoc, updateDoc, getDocs, Timestamp } from 'firebase/firestore';
-import { firestore, auth } from '../../service/firebaseconfig';
-import { RiDeleteBinLine, RiEdit } from 'react-icons/ri';
-import { MdEdit, MdCheckCircle } from 'react-icons/md';
+import { firestore, auth, storage } from '../../service/firebaseconfig';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { RiDeleteBinLine } from 'react-icons/ri';
+import { MdCheckCircle, MdDeleteForever } from 'react-icons/md';
+import '../../styles.css';
 
 function Academic() {
   const [notes, setNotes] = useState([]);
@@ -12,6 +14,12 @@ function Academic() {
   const [newNoteDueDate, setNewNoteDueDate] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [files, setFiles] = useState([]);
+  const [urls, setUrls] = useState([]);
+
+
 
   // Fetch notes on component mount
   useEffect(() => {
@@ -45,7 +53,8 @@ function Academic() {
         title: newNoteTitle,
         description: newNoteDescription,
         dueDate: newNoteDueDate ? Timestamp.fromDate(new Date(newNoteDueDate)) : null,
-        status: 'inProgress'
+        status: 'inProgress',
+        files: urls
       };
       const docRef = await addDoc(notesRef, newNote);
       setNotes([...notes, { id: docRef.id, ...newNote }]);
@@ -53,6 +62,8 @@ function Academic() {
       setNewNoteDescription('');
       setNewNoteDueDate('');
       setShowCreateForm(false);
+      setUrls('');
+      alert("New project created successfully");
     } catch (error) {
       console.error('Error adding document: ', error);
     }
@@ -101,184 +112,282 @@ function Academic() {
   };
 
   // Function to filter notes
-  const inProgressNotes = notes.filter(note => note.status === 'inProgress');
-  const completedNotes = notes.filter(note => note.status === 'completed');
-  const overdueNotes = notes.filter(note => {
-    return note.dueDate && note.dueDate.toDate() < new Date() && note.status !== 'completed';
+  const filteredNotes = notes.filter(note => {
+    if (filter === 'all') return true;
+    if (filter === 'inProgress') return note.status === 'inProgress';
+    if (filter === 'completed') return note.status === 'completed';
+    if (filter === 'overdue') {
+      return note.dueDate && note.dueDate.toDate() < new Date() && note.status !== 'completed';
+    }
+    return false;
   });
+
+  const handleDropdownSelect = (selectedFilter) => {
+    setFilter(selectedFilter);
+    setShowDropdown(false);
+  };
+
+  const handleFileUpload = async (file) => {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    const storageRef = ref(storage, `${user.uid}/${file.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    try {
+      // Upload file
+      await uploadTask;
+
+      // Get download URL
+      const url = await getDownloadURL(uploadTask.snapshot.ref);
+
+      // Update state with new file and URL
+      setFiles(prevFiles => [...prevFiles, file]);
+      setUrls(prevUrls => [...prevUrls, url]);
+
+      console.log('File uploaded and available at: ', url);
+    } catch (error) {
+      console.error('Upload failed or error retrieving download URL: ', error);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    selectedFiles.forEach(file => handleFileUpload(file));
+  };
+
+  const handleDeleteFile = async (url, index) => {
+    const user = auth.currentUser;
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+  
+    try {
+      const storageRef = ref(storage, `${user.uid}/${files[index].name}`);
+  
+      // Delete file from Firebase Storage
+      await deleteObject(storageRef);
+  
+      // Update UI state (remove file and URL)
+      setFiles(prevFiles => {
+        const newFiles = [...prevFiles];
+        newFiles.splice(index, 1);
+        return newFiles;
+      });
+  
+      setUrls(prevUrls => {
+        const newUrls = [...prevUrls];
+        newUrls.splice(index, 1);
+        return newUrls;
+      });
+  
+      // Update note.files to be empty for the currently editing note
+      const updatedNotes = notes.map(note => {
+        if (note.id === editingNoteId) {
+          return {
+            ...note,
+            files: note.files.filter(file => file !== url)  // Remove the deleted file from note.files
+          };
+        }
+        return note;
+      });
+  
+      setNotes(updatedNotes);
+      console.log('File deleted successfully');
+    } catch (error) {
+      console.error('Error deleting file: ', error);
+    }
+  };
+  
+  
+  
+
 
   return (
     <Layout>
-      <div className="mt-20 ml-40 mr-40 border border-blue-300 rounded-lg flex flex-col">
+      <div className="rounded-lg flex flex-col">
         <h3 className="text-4xl font-bold mb-4 text-center mt-6">Academic Projects</h3>
-        <div className="mb-2">
-          <button onClick={() => setShowCreateForm(!showCreateForm)} className="bg-blue-500 text-white text-3xl rounded mt-6 ml-9 h-10 w-10 pb-2">
+        <div className="mb-2 mr-40">
+          <button onClick={() => setShowCreateForm(!showCreateForm)} className="bg-blue-500 text-white text-3xl rounded-full mt-6 ml-10 h-10 w-10 pb-2 hover:bg-blue-600">
             {showCreateForm ? '-' : '+'}
           </button>
-          {showCreateForm && (
-            <div className="mt-4 flex flex-col ml-8 space-y-8">
-              <input
-                type="text"
-                value={newNoteTitle}
-                onChange={(e) => setNewNoteTitle(e.target.value)}
-                placeholder="Title of Project"
-                className="border border-gray-300 p-2 rounded mr-2 w-1/12"
-              />
-              <textarea
-                value={newNoteDescription}
-                onChange={(e) => setNewNoteDescription(e.target.value)}
-                placeholder="Description of Project"
-                className="border border-gray-300 p-2 rounded w-1/2 overflow-x"
-                rows={20}
-                style={{ whiteSpace: 'nowrap', overflowX: 'scroll' }}
-              />
-              <input
-                type="date"
-                value={newNoteDueDate}
-                onChange={(e) => setNewNoteDueDate(e.target.value)}
-                placeholder="Due Date"
-                className="border border-gray-300 p-2 rounded mr-2 w-1/12"
-              />
-              <button onClick={createNewNote} className="bg-blue-500 text-white py-2 rounded w-1/12">
-                Create Project
-              </button>
+          <div className={`transition-all duration-300 overflow-hidden ${showCreateForm ? 'max-h-screen' : 'max-h-0'}`}>
+            {showCreateForm && (
+              <div className="mt-4 flex flex-col ml-8 space-y-8">
+                <input
+                  type="text"
+                  value={newNoteTitle}
+                  onChange={(e) => setNewNoteTitle(e.target.value)}
+                  placeholder="Title of Project"
+                  className="border border-gray-300 p-2 rounded mr-2 w-1/3"
+                />
+                <textarea
+                  value={newNoteDescription}
+                  onChange={(e) => setNewNoteDescription(e.target.value)}
+                  placeholder="Description of Project"
+                  className="border border-gray-300 p-2 rounded w-1/2 overflow-x w-full"
+                  rows={10}
+                  style={{ whiteSpace: 'pre' }}
+                />
+    <div>
+      <label htmlFor="upload-file" className="cursor-pointer bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+        Upload File
+      </label>
+      <input
+        type="file"
+        id="upload-file"
+        accept="*"  // Accept all file types
+        className="hidden"
+        onChange={handleFileChange}
+        multiple  // Allow multiple file selection
+      />
+
+      {urls.length > 0 && (
+        <div className="mt-4">
+          <ul>
+            {urls.map((url, index) => (
+              <li key={index} className="inline-block max-w-max flex items-center justify-between hover:bg-gray-300">
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">{files[index].name}</a>
+                <div className="flex items-center">
+                  <button onClick={() => handleDeleteFile(url, index)} className="text-red-500 hover:text-red-700 transition-colors duration-300 ml-2">
+                    <MdDeleteForever className="text-xl" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+                <div className="flex text-left flex-col">
+                <label className="mr-2 mb-2 ml-1 font-bold">Due Date</label>
+                <input
+                  type="date"
+                  value={newNoteDueDate}
+                  onChange={(e) => setNewNoteDueDate(e.target.value)}
+                  placeholder="Due Date"
+                  className="border border-gray-300 p-2 rounded mr-2 w-1/6"
+                />
+                </div>
+                <button onClick={createNewNote} className="bg-blue-500 text-white py-2 rounded w-1/6 hover:bg-blue-600">
+                  Create Project
+                </button>
+               </div>
+            )}
+          </div>
+           </div>
+        {/* Dropdown Filter Button */}
+        <div className="relative ml-9 mt-10">
+        <button onClick={() => setShowDropdown(!showDropdown)} className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+        Filter Project
+        </button>
+          {showDropdown && (
+            <div className="absolute mt-2 py-2 w-48 bg-white rounded-lg shadow-xl">
+              <button onClick={() => handleDropdownSelect('all')} className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200">All</button>
+              <button onClick={() => handleDropdownSelect('inProgress')} className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200">In Progress</button>
+              <button onClick={() => handleDropdownSelect('completed')} className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200">Completed</button>
+              <button onClick={() => handleDropdownSelect('overdue')} className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-200">Overdue</button>
             </div>
           )}
         </div>
 
-        {/* In Progress Projects Section */}
-        <div className="mt-10 flex">
-          <div className="flex-grow flex flex-col">
-            <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Projects</h3>
-            {inProgressNotes.length === 0 ? (
-              <p className="ml-8 mb-5">No projects in progress</p>
-            ) : (
-              <ul className="ml-8">
-                {inProgressNotes.map((note) => (
-                  <li key={note.id} className="border border-gray-300 p-2 rounded mb-3">
-                    <div className="flex justify-between items-center">
-                      <div className="w-full mr-12">
-                        {editingNoteId === note.id ? (
-                          <div className="mt-3 flex flex-col space-y-8">
-                            <input
-                              type="text"
-                              value={note.title}
-                              placeholder="Title of Project"
-                              onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, title: e.target.value } : n)))}
-                              className="border border-gray-300 p-2 rounded w-1/3"
-                            />
-                            <textarea
-                              value={note.description}
-                              placeholder="Description of Project"
-                              onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, description: e.target.value } : n)))}
-                              className="border border-gray-300 p-2 rounded"
-                              rows={20}
-                              style={{ whiteSpace: 'nowrap', overflowX: 'scroll' }}
-                            />
-                            <input
-                              type="date"
-                              value={note.dueDate ? note.dueDate.toDate().toISOString().split('T')[0] : ''}
-                              placeholder="Due Date"
-                              onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, dueDate: Timestamp.fromDate(new Date(e.target.value)) } : n)))}
-                              className="border border-gray-300 p-2 rounded w-1/3"
-                            />
-                            <div className="flex items-center space-x-4">
-                              <button onClick={() => setEditingNoteId(null)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded">
-                                Cancel
-                              </button>
-                              <button onClick={() => saveEditedNote(note.id, { title: note.title, description: note.description, dueDate: note.dueDate })} className="bg-blue-500 text-white px-4 py-2 rounded mr-2">
-                                Save
-                              </button>
-                              <button onClick={() => deleteNote(note.id)} className="bg-red-500 text-white px-3 py-1 rounded">
-                                <RiDeleteBinLine className="my-2" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div>
-                            <h4 className="text-xl font-semibold">{note.title}</h4>
-                            {note.dueDate && (
-                              <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex">
-                        {note.status === 'inProgress' && (
-                          <button
-                            onClick={() => markNoteAsCompleted(note.id)}
-                            className="bg-green-500 text-white px-3 py-1 rounded mr-4"
-                          >
-                            <MdCheckCircle className="my-2" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => editNote(note.id)}
-                          className="bg-yellow-500 text-white px-3 py-1 rounded mr-2"
-                        >
-                          <MdEdit className="my-2" />
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Completed Projects Section */}
-        <div className="flex-1 flex-col">
-          <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Completed</h3>
-          {completedNotes.length === 0 ? (
-            <p className="ml-8 mb-5">No completed projects</p>
+        {/* Filtered Notes Section */}
+        <div className="mt-10 flex flex-col">
+          {filteredNotes.length === 0 ? (
+            <p className="ml-10 mb-5">No projects found</p>
           ) : (
-            <ul className="ml-8">
-              {completedNotes.map((note) => (
-                <li key={note.id} className="flex items-center border border-gray-300 p-2 rounded mb-3 mr-6">
-                  <div className="flex-1">
-                    <h4 className="text-xl font-semibold">{note.title}</h4>
-                    {note.dueDate && (
-                      <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
-                    )} 
+            <ul className="ml-8 mr-20">
+              {filteredNotes.map((note) => (
+                <li key={note.id} className="border border-gray-300 p-2 rounded mb-5 ml-1">
+                  <div className="flex justify-between items-center">
+                    <div className="w-full mr-12">
+                      {editingNoteId === note.id ? (
+                        <div className="mt-3 flex flex-col space-y-8">
+                          <input
+                            type="text"
+                            value={note.title}
+                            placeholder="Title of Project"
+                            onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, title: e.target.value } : n)))}
+                            className="border border-gray-300 p-2 rounded w-1/2"
+                          />
+                          <textarea
+                            value={note.description}
+                            placeholder="Description of Project"
+                            onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, description: e.target.value } : n)))}
+                            className="border border-gray-300 p-2 rounded"
+                            rows={20}
+                            style={{ whiteSpace: 'pre' }}
+                          />
+                  
+      
+                           {/* Display existing URLs */}
+    {note.files && note.files.length > 0 && (
+      <div className="mt-4">
+        <ul>
+          {note.files.map((url, index) => (
+            <li key={index} className="inline-block max-w-max flex items-center justify-between hover:bg-gray-300">
+              <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">{files[index].name}</a>
+              <div className="flex items-center">
+                <button onClick={() => handleDeleteFile(url, index)} className="text-red-500 hover:text-red-700 transition-colors duration-300 ml-2">
+                  <MdDeleteForever className="text-xl" />
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+                     
+                           <div className="flex text-left flex-col">
+                            <label className="mr-2 mb-2 ml-1 font-bold">Due Date</label>
+                               <input
+                                  type="date"
+                                  value={note.dueDate ? note.dueDate.toDate().toISOString().split('T')[0] : ''}
+                                  onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, dueDate: Timestamp.fromDate(new Date(e.target.value)) } : n)))}
+                                  className="border border-gray-300 p-2 rounded w-1/6"
+                              />
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <button onClick={() => setEditingNoteId(null)} className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400">
+                              Cancel
+                            </button>
+                            <button onClick={() => saveEditedNote(note.id, { title: note.title, description: note.description, dueDate: note.dueDate, files: note.files })} className="bg-blue-500 text-white px-4 py-2 rounded mr-2 hover:bg-blue-600">
+                              Save
+                            </button>
+                            <button onClick={() => deleteNote(note.id)} className="bg-red-500 text-white px-3 py-1 rounded-full hover:bg-red-600">
+                              <RiDeleteBinLine className="my-2" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <button onClick={() => editNote(note.id)} className="text-md font-semibold w-full text-left py-1">{note.title}</button>
+                          {note.dueDate && (
+                            <button onClick={() => editNote(note.id)} className="text-sm text-gray-400 w-full text-left py-1">Due: {note.dueDate.toDate().toLocaleDateString()}</button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex">
+                      {note.status === 'inProgress' && (
+                        <button
+                          onClick={() => markNoteAsCompleted(note.id)}
+                          className="bg-green-500 text-white px-3 py-1 rounded-full mr-1 text-xs hover:bg-green-600"
+                        >
+                          <MdCheckCircle className="my-2" />
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <button
-                    onClick={() => deleteNote(note.id)}
-                    className="bg-red-500 text-white px-3 py-3 rounded opacity-0 transition duration-300 hover:opacity-100 mr-3"
-                  >
-                    <RiDeleteBinLine />
-                  </button>       
                 </li>
               ))}
             </ul>
           )}
-        </div>
-
-          {/* Overdue Projects Section */}
-          <div className="flex-1 flex flex-col">
-            <h3 className="text-3xl font-semibold mb-2 ml-8 pb-5">Overdue</h3>
-            {overdueNotes.length === 0 ? (
-              <p className="ml-8 mb-5">No overdue projects</p>
-            ) : (
-              <ul className="ml-8">
-                {overdueNotes.map((note) => (
-                  <li key={note.id} className="flex items-center border border-gray-300 p-2 rounded mb-3 mr-6">
-                    <div className="flex-1">
-                      <h4 className="text-xl font-semibold">{note.title}</h4>
-                      {note.dueDate && (
-                        <p className="text-sm text-gray-400">Due: {note.dueDate.toDate().toLocaleDateString()}</p>
-                      )}
-                    </div>
-                    <button
-                    onClick={() => deleteNote(note.id)}
-                    className="bg-red-500 text-white px-3 py-3 rounded opacity-0 transition duration-300 hover:opacity-100 mr-3"
-                  >
-                    <RiDeleteBinLine />
-                  </button>  
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </div>
       </div>
     </Layout>
