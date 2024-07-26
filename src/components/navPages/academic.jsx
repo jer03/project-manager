@@ -18,6 +18,9 @@ function Academic() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [files, setFiles] = useState([]);
   const [urls, setUrls] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
 
 
 
@@ -54,7 +57,8 @@ function Academic() {
         description: newNoteDescription,
         dueDate: newNoteDueDate ? Timestamp.fromDate(new Date(newNoteDueDate)) : null,
         status: 'inProgress',
-        files: urls
+        files: urls,
+        tasks: tasks
       };
       const docRef = await addDoc(notesRef, newNote);
       setNotes([...notes, { id: docRef.id, ...newNote }]);
@@ -63,6 +67,7 @@ function Academic() {
       setNewNoteDueDate('');
       setShowCreateForm(false);
       setUrls('');
+      setTasks([]);
       alert("New project created successfully");
     } catch (error) {
       console.error('Error adding document: ', error);
@@ -202,10 +207,33 @@ function Academic() {
       console.error('Error deleting file: ', error);
     }
   };
-  
-  
-  
 
+  const addTask = async () => {
+    const newTask = { title: newTaskTitle, description: newTaskDescription };
+    const updatedTasks = [...tasks, newTask];
+    setTasks(updatedTasks);
+    
+    const userId = auth.currentUser.uid;
+    const noteRef = doc(firestore, 'users', userId, 'academicNotes', lol);
+    await updateDoc(noteRef, { tasks: updatedTasks });
+
+    setNewTaskTitle('');
+    setNewTaskDescription('');
+  };
+
+  const deleteTask = async (noteId, taskIndex) => {
+    try {
+      const userId = auth.currentUser.uid;
+      const noteRef = doc(firestore, 'users', userId, 'academicNotes', noteId);
+      const updatedTasks = notes.find(note => note.id === noteId).tasks.filter((_, index) => index !== taskIndex);
+      await updateDoc(noteRef, { tasks: updatedTasks });
+      setNotes(notes.map(note => (note.id === noteId ? { ...note, tasks: updatedTasks } : note)));
+    } catch (error) {
+      console.error('Error deleting task: ', error);
+    }
+  };
+  
+  
 
   return (
     <Layout>
@@ -263,6 +291,8 @@ function Academic() {
         </div>
       )}
     </div>
+
+   
                 <div className="flex text-left flex-col">
                 <label className="mr-2 mb-2 ml-1 font-bold">Due Date</label>
                 <input
@@ -273,6 +303,11 @@ function Academic() {
                   className="border border-gray-300 p-2 rounded mr-2 w-1/6"
                 />
                 </div>
+                <input value={newTaskTitle} onChange={(e) => setNewTaskTitle(e.target.value)} placeholder="Task Title" />
+      <input value={newTaskDescription} onChange={(e) => setNewTaskDescription(e.target.value)} placeholder="Task Description" />
+      <button onClick={addTask}>Add Task</button>
+
+
                 <button onClick={createNewNote} className="bg-blue-500 text-white py-2 rounded w-1/6 hover:bg-blue-600">
                   Create Project
                 </button>
@@ -319,7 +354,7 @@ function Academic() {
                             placeholder="Description of Project"
                             onChange={(e) => setNotes(notes.map(n => (n.id === note.id ? { ...n, description: e.target.value } : n)))}
                             className="border border-gray-300 p-2 rounded"
-                            rows={20}
+                            rows={10}
                             style={{ whiteSpace: 'pre' }}
                           />
                   
@@ -341,6 +376,7 @@ function Academic() {
         </ul>
       </div>
     )}
+   
 
                      
                            <div className="flex text-left flex-col">
