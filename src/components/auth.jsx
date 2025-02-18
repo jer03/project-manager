@@ -3,6 +3,7 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithP
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { firestore } from '../service/firebaseconfig';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export const signUp = async (email, password) => {
   try {
@@ -49,11 +50,19 @@ export const signInWithGoogle = async () => {
   }
 };
 
-export const signOutUser = async () => {
-  try {
-    await signOut(auth);
-    alert("User signed out");
-  } catch (error) {
-    console.error("Error signing out", error);
-  }
+
+export const useSignOut = () => {
+  const navigate = useNavigate();
+
+  const signOutUser = async () => {
+    try {
+      await signOut(auth);
+      alert('User signed out');
+      navigate('/'); // Navigate to homepage
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  return signOutUser;
 };

@@ -15,7 +15,7 @@ function CalendarDate() {
     <Layout>
       <div className="flex flex-col items-center p-4">
         <h2 className="text-2xl font-bold mb-4">Calendar</h2>
-        <div className="w-full max-w-md mx-auto bg-white shadow-lg rounded-lg p-4">
+        <div className="w-full max-w-md mx-auto rounded-lg p-4 ">
           <Calendar onChange={onChange} value={date} />
         </div>
       </div>
