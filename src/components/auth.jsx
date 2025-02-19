@@ -7,7 +7,8 @@ import { useNavigate } from 'react-router-dom';
 
 export const signUp = async (email, password) => {
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    return userCredential;
   } catch (error) {
     console.error("Error signing up with email and password", error);
   }
