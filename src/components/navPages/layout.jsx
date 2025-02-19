@@ -28,13 +28,13 @@ const Layout = ({ children }) => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 shadow-lg">
-      <div 
-  className="flex flex-row items-center justify-center h-20 border-b"
->
-  <h1 className="text-2xl font-bold text-gray-800 bg-white bg-transparent px-4 py-1 rounded-md">
-    My Dashboard
-  </h1>
-  </div>
+        <div
+          className="flex flex-row items-center justify-center h-20 border-b"
+        >
+          <h1 className="text-2xl font-bold text-gray-800 bg-white bg-transparent px-4 py-1 rounded-md">
+            My Dashboard
+          </h1>
+        </div>
 
 
         <ul className="mt-4 space-y-2">
@@ -65,10 +65,10 @@ const Layout = ({ children }) => {
             </button>
           </li>
         </ul>
-  
-        <img src={cuteSmile} 
-  alt="Logo" 
-  className="object-cover rounded-xl bg-transparent mt-10" />
+
+        <img src={cuteSmile}
+          alt="Logo"
+          className="object-cover rounded-xl bg-transparent mt-10" />
       </aside>
 
       {/* Main Content */}

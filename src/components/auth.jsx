@@ -18,13 +18,13 @@ export const signIn = async (email, password) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     const userDocRef = doc(firestore, "users", user.uid);
-      // Create new user document
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        createdAt: new Date()
-      });
-   
+    // Create new user document
+    await setDoc(userDocRef, {
+      uid: user.uid,
+      email: user.email,
+      createdAt: new Date()
+    });
+
     alert("User signed in successfully");
   } catch (error) {
     console.error("Error signing in with email and password", error);
@@ -37,12 +37,12 @@ export const signInWithGoogle = async () => {
     const userCredential = await signInWithPopup(auth, googleProvider);
     const user = userCredential.user;
     const userDocRef = doc(firestore, "users", user.uid);
-      // Create new user document
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email,
-        createdAt: new Date()
-      });
+    // Create new user document
+    await setDoc(userDocRef, {
+      uid: user.uid,
+      email: user.email,
+      createdAt: new Date()
+    });
     alert("User signed in with Google");
   } catch (error) {
     console.error("Error signing in with Google", error);

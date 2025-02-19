@@ -30,7 +30,7 @@ const Signup = () => {
       setSuccessMessage("User signed up successfully!");
 
     }
-     catch (error) {
+    catch (error) {
       setError("Error: Invalid e-mail");
     }
   };

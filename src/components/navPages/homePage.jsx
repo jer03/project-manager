@@ -83,11 +83,10 @@ const Home = () => {
               )}
             </div>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                note.status === 'completed' ? 'bg-green-200 text-green-700' :
-                note.status === 'overdue' ? 'bg-red-200 text-red-700' :
-                'bg-yellow-200 text-yellow-700'
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-bold ${note.status === 'completed' ? 'bg-green-200 text-green-700' :
+                  note.status === 'overdue' ? 'bg-red-200 text-red-700' :
+                    'bg-yellow-200 text-yellow-700'
+                }`}
             >
               {note.status.charAt(0).toUpperCase() + note.status.slice(1)}
             </span>
@@ -155,11 +154,10 @@ const Home = () => {
             <button
               key={section}
               onClick={() => setCurrentSection(section)}
-              className={`py-2 px-4 font-semibold ${
-                currentSection === section
+              className={`py-2 px-4 font-semibold ${currentSection === section
                   ? 'border-b-4 border-blue-500 text-blue-500'
                   : 'text-gray-500'
-              }`}
+                }`}
             >
               {section}
             </button>
