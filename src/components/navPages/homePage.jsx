@@ -100,7 +100,7 @@ const Home = () => {
   const renderSummaryCards = () => {
     const summaryData = [
       {
-        title: 'Active Tasks',
+        title: 'Active Projects',
         count:
           categorizedAcademicNotes.active.length +
           categorizedPersonalNotes.active.length +
@@ -108,7 +108,7 @@ const Home = () => {
         color: 'bg-blue-500',
       },
       {
-        title: 'Overdue Tasks',
+        title: 'Overdue Projects',
         count:
           categorizedAcademicNotes.overdue.length +
           categorizedPersonalNotes.overdue.length +
@@ -116,7 +116,7 @@ const Home = () => {
         color: 'bg-red-500',
       },
       {
-        title: 'Completed Tasks',
+        title: 'Completed Projects',
         count:
           categorizedAcademicNotes.completed.length +
           categorizedPersonalNotes.completed.length +
@@ -166,7 +166,7 @@ const Home = () => {
 
         {/* Notes Display */}
         <div className="space-y-6">
-          <h3 className="text-xl font-semibold">{currentSection} Active Tasks</h3>
+          <h3 className="text-xl font-semibold">{currentSection} Active Projects</h3>
           {currentSection === 'Academic' && renderNotes(categorizedAcademicNotes.active)}
           {currentSection === 'Personal' && renderNotes(categorizedPersonalNotes.active)}
           {currentSection === 'Health' && renderNotes(categorizedHealthNotes.active)}
@@ -192,7 +192,7 @@ const Home = () => {
             onClick={fetchAllNotes}
             className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400"
           >
-            Refresh Tasks
+            Refresh Projects
           </button>
         </div>
       </div>
