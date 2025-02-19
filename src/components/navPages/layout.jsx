@@ -18,7 +18,6 @@ const Layout = ({ children }) => {
   // Navigation Links
   const navItems = [
     { name: 'Home', path: '/homepage', icon: <HomeIcon size={20} /> },
-    { name: 'Calendar', path: '/calendar', icon: <CalendarIcon size={20} /> },
     { name: 'Academic', path: '/academic', icon: <BookOpenIcon size={20} /> },
     { name: 'Health', path: '/health', icon: <HeartIcon size={20} /> },
     { name: 'Personal', path: '/personal', icon: <UserIcon size={20} /> },

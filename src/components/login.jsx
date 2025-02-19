@@ -54,12 +54,6 @@ const Login = () => {
             Login
           </button>
         </form>
-        <button
-          onClick={handleGoogleSignIn}
-          className="mt-4 w-full bg-red-500 text-white p-2 rounded"
-        >
-          Sign in with Google
-        </button>
         {error && <p className="text-red-500 mt-3">{error}</p>}
         <div className="mt-4 text-center">
           <Link to="/signup" className="text-blue-500 hover:underline">
