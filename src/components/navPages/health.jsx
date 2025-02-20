@@ -24,11 +24,11 @@ function Health() {
 
   // Fetch notes on component mount
   useEffect(() => {
-    fetchAcademicNotes();
+    fetchHealthNotes();
   }, []);
 
-  // Function to fetch academic notes
-  const fetchAcademicNotes = async () => {
+  // Function to fetch health notes
+  const fetchHealthNotes = async () => {
     try {
       const userId = auth.currentUser.uid;
       const notesRef = collection(firestore, 'users', userId, 'healthNotes');

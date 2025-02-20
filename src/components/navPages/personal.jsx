@@ -24,11 +24,11 @@ function Personal() {
 
   // Fetch notes on component mount
   useEffect(() => {
-    fetchAcademicNotes();
+    fetchPersonalNotes();
   }, []);
 
-  // Function to fetch academic notes
-  const fetchAcademicNotes = async () => {
+  // Function to fetch personal notes
+  const fetchPersonalNotes = async () => {
     try {
       const userId = auth.currentUser.uid;
       const notesRef = collection(firestore, 'users', userId, 'personalNotes');
